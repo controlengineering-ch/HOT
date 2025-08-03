@@ -1,6 +1,7 @@
 # RadonSafe v1.0
 
-👷 Projektin tarkoituksena on käyttää ESP32-C6 -mikrokontrolleria valvomaan radonpitoisuuksia 
+👷 Projektin tarkoituksena on käyttää ESP32-C6 -mikrokontrolleria valvomaan radonpitoisuuksia. 
+
 ## 🚀 Toiminnot
 
 - 🟡 BLE-skannaus: hakee Airthings Wave Plus -sensorin radonmittaukset
