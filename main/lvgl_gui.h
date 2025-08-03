@@ -1,7 +1,15 @@
 #pragma once
-#include "radon_analyzer.h"
-#include "ble_scan.h"
 
-void init_lvgl();
-void update_gui_with_data(const SensorData &data, const RadonAlert &alert);
+#include "lvgl.h"
+
+enum class StatusLevel {
+    NORMAL,
+    WARNING,
+    CRITICAL
+};
+
+void lvgl_gui_init();
+void update_radiation_value(int bq_value);
+void update_sensor_id(const char* id);
+void update_status(StatusLevel level);
 
