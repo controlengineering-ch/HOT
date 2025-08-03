@@ -1,0 +1,25 @@
+# ESP-IDF build output
+build/
+*.bin
+*.elf
+*.map
+
+# SDK config
+sdkconfig
+sdkconfig.old
+
+# VSCode workspace settings
+.vscode/
+
+# Core dumps
+core*
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# SD-kortin dataa (jos testaat)
+*.csv
+*.log
+*.json
