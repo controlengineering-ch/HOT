@@ -1,49 +1,42 @@
-# RadonSafe v1.0
+# RadonSafe – ESP32-C6 BLE Überwachungssystem
+
 
 👷 Projektin tarkoituksena on käyttää ESP32-C6 -mikrokontrolleria valvomaan radonpitoisuuksia. 
 
-## 🚀 Toiminnot
+RadonSafe ist ein energiesparendes Sicherheitsüberwachungssystem, das auf dem ESP32-C6-LCD-1.47-Entwicklungsboard basiert. Es erkennt gefährliche Radonkonzentrationen in Echtzeit mithilfe von BLE-fähigen Airthings Wave Plus Sensoren.
+(Update README.md with German and English descriptions)
 
-- 🟡 BLE-skannaus: hakee Airthings Wave Plus -sensorin radonmittaukset
-- 📊 Analyysi: vertaa arvoja raja-arvoihin (150/220 Bq/m³)
-- 🖥️ Näyttö: 1.47" TFT SPI-näyttö (LVGL)
-- 💾 Tallennus: CSV-tiedostot SD-kortille
-- ☁️ Pilvi: tiedot lähetetään Azure-palvelimeen
-- 🔔 Hälytys: keltainen/punainen LED + näyttöilmoitus
+## Eigenschaften
 
-## 🛠️ Rakentaminen
+- 📡 **BLE-Erkennung** von Airthings Wave Plus Sensoren (alle 30s)
+- 🧠 **Edge-Analyse** mit Warnlogik (220 Bq/m³ kritischer Grenzwert)
+- 💾 **Datenlogging** auf SD-Karte (FIFO-Pufferung)
+- 🌐 **Cloud-Upload** via Wi-Fi (Azure)
+- 🔋 **Very Low Power Mode** mit GPIO-Aufwecksignal
+- 📟 **1.47” LCD GUI** mit klarer Warnanzeige und Gerätenamen
+- 🔒 **Lokaler Alarmstatus** bis zur manuellen Bestätigung gespeichert
 
-```bash
-cd esp32c6_radonsafe
-source ~/esp-idf/export.sh
-idf.py build
-idf.py -p /dev/ttyUSB0 flash monitor
+## Systemübersicht
 
+RadonSafe arbeitet vollständig autark im Feldbetrieb, erkennt automatisch verfügbare BLE-Sensoren, speichert Messwerte lokal, warnt bei Grenzwertüberschreitungen optisch und akustisch und lädt alle Messwerte regelmäßig in die Cloud.
 
-SD-kortin rakenne
+---
 
-/sdcard/
-├── logs/
-│   └── radon_log.csv
-└── settings/
-    └── config.json
+# RadonSafe – ESP32-C6 BLE Monitoring System
 
-config.json-esimerkki:
+RadonSafe is a low-power safety monitoring system based on the ESP32-C6-LCD-1.47 development board. It detects hazardous radon concentrations in real time using BLE-enabled Airthings Wave Plus sensors.
 
-{
-  "polling_interval": 30000,
-  "threshold_warn": 150,
-  "threshold_danger": 220
-}
+## Features
 
-🔒 Huomioita
+- 📡 **BLE scanning** for Airthings Wave Plus sensors (every 30s)
+- 🧠 **Edge analytics** with warning logic (220 Bq/m³ critical threshold)
+- 💾 **Data logging** to SD card (FIFO buffering)
+- 🌐 **Cloud upload** via Wi-Fi (Azure)
+- 🔋 **Very Low Power Mode** with GPIO wakeup signal
+- 📟 **1.47” LCD GUI** with clear visual alerts and sensor name
+- 🔒 **Local alarm status** retained until manually acknowledged
 
-    Käytä FAT32-formatoitua SD-korttia
-
-    BLE yhteensopiva vain tiettyjen Airthings-mallien kanssa
-
-    Azure HTTPS-endpoint määritellään azure_upload.cpp-tiedostossa
-
+<<<<<<< HEAD
 ENGLISH:
 
 #RadonSafe v1.0
@@ -92,5 +85,9 @@ config.json example:
 
     The Azure HTTPS endpoint is defined in the azure_upload.cpp file.
 
+=======
+## System Overview
+>>>>>>> 52e2405 (Update README.md with German and English descriptions)
 
+RadonSafe operates fully autonomously in the field, automatically detects nearby BLE sensors, stores measurements locally, issues visual/audio alerts if thresholds are exceeded, and periodically uploads all data to the cloud.
 
