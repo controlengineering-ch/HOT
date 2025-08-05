@@ -1,42 +1,36 @@
 #include "radon_analyzer.h"
-#include "control_data.h"
-#include <esp_log.h>
+#include "sensor_data.h"
+#include "radon_alert.h"
+**#include "driver/gpio.h"**  
 
-static const char *TAG = "Analyzer";
+// 🆕 Tarvitaan GPIO_PIN määrityksiin ja gpio_set_level
 
-RadonAlert analyze_radon(const SensorData &data)
-{
+void analyze_radon_data(const SensorData &data) {
     RadonAlert alert;
-    alert.level = ALERT_NONE;
-    alert.active = false;
 
-    int warn_threshold = get_warn_threshold();
-    int danger_threshold = get_danger_threshold();
-
-    ESP_LOGI(TAG, "Analysoidaan radon-arvo: %d", data.radon);
-
-    if (data.radon >= danger_threshold) {
-        alert.level = ALERT_DANGER;
-        alert.message = "Radon level HI HI";
-        alert.active = true;
-    } else if (data.radon >= warn_threshold) {
-        alert.level = ALERT_WARN;
-        alert.message = "Radon level HI";
-        alert.active = true;
+    if (data.radon >= 220) {
+        alert.level = AlertLevel::CRITICAL;
+        alert.message = "CRITICAL: Radon level too high!";
+    } else if (data.radon >= 150) {
+        alert.level = AlertLevel::WARNING;
+        alert.message = "WARNING: Elevated radon level.";
+    } else {
+        alert.level = AlertLevel::NORMAL;
+        alert.message = "Radon level normal.";
     }
 
-    return alert;
+    trigger_alert_visuals(alert);
 }
 
-void trigger_alert_visuals(const RadonAlert &alert)
-{
-    if (alert.level == ALERT_DANGER) {
-        // Punainen LED ja vilkku
-        gpio_set_level(GPIO_NUM_2, 1);  // Esimerkkipinni
-        // Vilkutuslogiikka voisi olla FreeRTOS task
-    } else if (alert.level == ALERT_WARN) {
-        // Keltainen LED
-        gpio_set_level(GPIO_NUM_2, 1);
+void trigger_alert_visuals(const RadonAlert &alert) {
+    // Placeholder: visualize alert with LEDs or GUI changes
+    if (alert.level == AlertLevel::CRITICAL) {
+        **gpio_set_level(GPIO_NUM_2, 1);**  // Esimerkkipinni
+        // Add buzzer or other indicator logic
+    } else if (alert.level == AlertLevel::WARNING) {
+        **gpio_set_level(GPIO_NUM_2, 1);**
+    } else {
+        **gpio_set_level(GPIO_NUM_2, 0);**
     }
 }
 
