@@ -1,16 +1,12 @@
-#ifndef BLE_SCANNER_H
-#define BLE_SCANNER_H
+#pragma once
 
 #include <string>
-#include <vector>
+#include "sensor_data.h"
 
-struct SensorInfo {
-    std::string macAddress;
-    int rssi;
-};
+SensorData scan_for_waveplus();
 
-void startBleScan();
-std::vector<SensorInfo> getDiscoveredSensors();
-
-#endif // BLE_SCANNER_H
+// Stub-funktioiden julistukset:
+bool connect_to_sensor(const std::string& mac_address);
+int read_radon_value(const std::string& mac_address);
+std::string read_timestamp(const std::string& mac_address);
 
