@@ -1,92 +1,82 @@
-#include "sd_card.h"
-#include <esp_log.h>
-#include <esp_vfs_fat.h>
-#include <nvs_flash.h>
-#include <driver/sdspi_host.h>
-#include <sdmmc_cmd.h>
-#include <cJSON.h>
-#include <fstream>
+#include <stdio.h>
+#include <string>
+#include "esp_vfs_fat.h"
+#include "driver/sdspi_host.h"
+#include "driver/spi_common.h"
+#include "driver/gpio.h"
+#include "esp_log.h"
+#include "sdmmc_cmd.h"
+#include "log_to_sd.h"
+#include "data_structs.h"
 
-static const char *TAG = "SD";
+static const char *TAG = "SD_CARD";
 
 #define MOUNT_POINT "/sdcard"
-#define CONFIG_FILE_PATH "/sdcard/settings/config.json"
-#define LOG_FILE_PATH "/sdcard/logs/radon_log.csv"
+#define SPI_DMA_CHAN 1
 
-bool init_sd_card()
-{
-    ESP_LOGI(TAG, "Alustetaan SD-kortti...");
+sdmmc_card_t *card;
 
-    esp_vfs_fat_sdmmc_mount_config_t mount_config = {
-        .format_if_mount_failed = false,
+bool init_sd_card() {
+    esp_vfs_fat_mount_config_t mount_config = {
+        .format_if_mount_failed = true,
         .max_files = 5,
-        .allocation_unit_size = 16 * 1024
+        .disk_status_check_enable = false,
+        .use_one_fat = false
     };
 
-    sdmmc_card_t *card;
-    const char mount_point[] = MOUNT_POINT;
-    sdmmc_host_t host = SDSPI_HOST_DEFAULT();
-    sdspi_slot_config_t slot_config = SDSPI_SLOT_CONFIG_DEFAULT();
-    gpio_set_pull_mode(15, GPIO_PULLUP_ONLY); // MISO oletuksena
+    spi_bus_config_t bus_cfg = {
+        .mosi_io_num = GPIO_NUM_13,
+        .miso_io_num = GPIO_NUM_15,
+        .sclk_io_num = GPIO_NUM_14,
+        .quadwp_io_num = -1,
+        .quadhd_io_num = -1,
+        .max_transfer_sz = 4000
+    };
 
-    esp_err_t ret = esp_vfs_fat_sdspi_mount(mount_point, &host, &slot_config, &mount_config, &card);
+    ESP_ERROR_CHECK(spi_bus_initialize(SPI2_HOST, &bus_cfg, SPI_DMA_CHAN));
+
+    sdspi_device_config_t slot_config = SDSPI_DEVICE_CONFIG_DEFAULT();
+    slot_config.host_id = SPI2_HOST;
+    slot_config.gpio_cs = GPIO_NUM_12;
+
+    esp_err_t ret = esp_vfs_fat_sdspi_mount(MOUNT_POINT, &slot_config.host, &slot_config, &mount_config, &card);
 
     if (ret != ESP_OK) {
-        ESP_LOGE(TAG, "❌ SD-kortin mount epäonnistui: %s", esp_err_to_name(ret));
+        ESP_LOGE(TAG, "Failed to mount filesystem. Error: %s", esp_err_to_name(ret));
         return false;
     }
 
-    ESP_LOGI(TAG, "✅ SD-kortti valmis.");
+    ESP_LOGI(TAG, "SD card mounted at %s", MOUNT_POINT);
     return true;
 }
 
-void save_data_to_sd(const SensorData &data)
-{
-    FILE *f = fopen(LOG_FILE_PATH, "a");
-    if (f == nullptr) {
-        ESP_LOGE(TAG, "❌ Ei voitu avata logitiedostoa kirjoitusta varten.");
+void save_data_to_sd(const SensorData& data) {
+    char path[128];
+    snprintf(path, sizeof(path), "%s/data.csv", MOUNT_POINT);
+    FILE* f = fopen(path, "a");
+    if (f == NULL) {
+        ESP_LOGE(TAG, "Failed to open file for writing: %s", path);
         return;
     }
-
-    fprintf(f, "%s,%d,%u\n", data.identifier.c_str(), data.radon, data.timestamp);
+    fprintf(f, "%s,%d,%llu\n", data.identifier.c_str(), data.radon, (unsigned long long)data.timestamp);
     fclose(f);
-
-    ESP_LOGI(TAG, "✔ Mittaustulos tallennettu: %s", LOG_FILE_PATH);
+    ESP_LOGI(TAG, "Data written to %s", path);
 }
 
-void load_config_from_sd()
-{
-    FILE *f = fopen(CONFIG_FILE_PATH, "r");
-    if (f == nullptr) {
-        ESP_LOGW(TAG, "⚠️ Ei löytynyt config.json tiedostoa.");
+void load_config_from_sd() {
+    char path[128];
+    snprintf(path, sizeof(path), "%s/config.txt", MOUNT_POINT);
+    FILE* f = fopen(path, "r");
+    if (f == NULL) {
+        ESP_LOGW(TAG, "No config file found: %s", path);
         return;
     }
 
-    fseek(f, 0, SEEK_END);
-    size_t size = ftell(f);
-    rewind(f);
-
-    char *content = (char *) malloc(size + 1);
-    fread(content, 1, size, f);
-    content[size] = 0;
+    int polling = 10, warn = 150, danger = 220;
+    fscanf(f, "%d,%d,%d", &polling, &warn, &danger);
     fclose(f);
 
-    cJSON *json = cJSON_Parse(content);
-    if (!json) {
-        ESP_LOGE(TAG, "⚠️ JSON parsing epäonnistui.");
-        free(content);
-        return;
-    }
-
-    int polling = cJSON_GetObjectItem(json, "polling_interval")->valueint;
-    int warn = cJSON_GetObjectItem(json, "threshold_warn")->valueint;
-    int danger = cJSON_GetObjectItem(json, "threshold_danger")->valueint;
-
     set_control_params(polling, warn, danger);
-
-    ESP_LOGI(TAG, "🧠 Asetukset ladattu: poll=%d, warn=%d, danger=%d", polling, warn, danger);
-
-    cJSON_Delete(json);
-    free(content);
+    ESP_LOGI(TAG, "Config loaded: poll=%d, warn=%d, danger=%d", polling, warn, danger);
 }
 
