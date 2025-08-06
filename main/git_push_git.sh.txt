@@ -1,0 +1,28 @@
+#!/bin/bash
+
+# Yksinkertainen git push -automatisointi
+
+# Tarkista, että ollaan Git-repossa
+if [ ! -d .git ]; then
+    echo "⚠️  Tämä hakemisto ei ole git-repossa!"
+    exit 1
+fi
+
+# Kommit-viesti parametrina tai kysytään
+if [ -z "$1" ]; then
+    read -p "Anna kommit-viesti: " msg
+else
+    msg="$*"
+fi
+
+# Lisää, kommitoi ja pushaa
+echo "🔄 Lisää muutokset..."
+git add .
+
+echo "📝 Kommitoidaan: \"$msg\""
+git commit -m "$msg"
+
+echo "🚀 Pusketaan etärepoon..."
+git push
+
+echo "✅ Valmis!"

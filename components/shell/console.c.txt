@@ -1,0 +1,109 @@
+#include "console.h"
+#include "esp_console.h"
+#include "linenoise/linenoise.h"
+#include "argtable3/argtable3.h"
+#include "sensor_manager.h"
+#include "esp_log.h"
+#include <string.h>
+
+static const char *TAG = "SHELL";
+
+static int cmd_start(int argc, char **argv)
+{
+    if (argc < 2) {
+        printf("Usage: start <no7|no8|no1>\n");
+        return 1;
+    }
+
+    if (strcmp(argv[1], "no7") == 0) {
+        sensor_manager_start(SENSOR_NO7);
+    } else if (strcmp(argv[1], "no8") == 0) {
+        sensor_manager_start(SENSOR_NO8);
+    } else if (strcmp(argv[1], "no1") == 0) {
+        sensor_manager_start(SENSOR_NO1);
+    } else {
+        printf("Unknown sensor: %s\n", argv[1]);
+    }
+
+    return 0;
+}
+
+static int cmd_stop(int argc, char **argv)
+{
+    if (argc < 2) {
+        printf("Usage: stop <no7|no8|no1|all>\n");
+        return 1;
+    }
+
+    if (strcmp(argv[1], "no7") == 0) {
+        sensor_manager_stop(SENSOR_NO7);
+    } else if (strcmp(argv[1], "no8") == 0) {
+        sensor_manager_stop(SENSOR_NO8);
+    } else if (strcmp(argv[1], "no1") == 0) {
+        sensor_manager_stop(SENSOR_NO1);
+    } else if (strcmp(argv[1], "all") == 0) {
+        sensor_manager_stop_all();
+    } else {
+        printf("Unknown sensor: %s\n", argv[1]);
+    }
+
+    return 0;
+}
+
+static int cmd_status(int argc, char **argv)
+{
+    sensor_manager_print_status();
+    return 0;
+}
+
+void register_commands(void)
+{
+    esp_console_cmd_register(&(esp_console_cmd_t){
+        .command = "start",
+        .help = "Start sensor (no7, no8, no1)",
+        .hint = NULL,
+        .func = &cmd_start
+    });
+
+    esp_console_cmd_register(&(esp_console_cmd_t){
+        .command = "stop",
+        .help = "Stop sensor (no7, no8, no1, all)",
+        .hint = NULL,
+        .func = &cmd_stop
+    });
+
+    esp_console_cmd_register(&(esp_console_cmd_t){
+        .command = "status",
+        .help = "Show running sensors",
+        .hint = NULL,
+        .func = &cmd_status
+    });
+}
+
+void console_init(void)
+{
+    esp_console_config_t console_config = {
+        .max_cmdline_args = 8,
+        .max_cmdline_length = 256,
+        .hint_color = 36
+    };
+
+    esp_console_init(&console_config);
+    esp_vfs_dev_uart_use_driver(CONFIG_ESP_CONSOLE_UART_NUM);
+    linenoiseHistorySetMaxLen(100);
+    register_commands();
+}
+
+void console_loop(void)
+{
+    char *line;
+    while (1) {
+        line = linenoise("radonsafe> ");
+        if (line) {
+            int ret;
+            esp_err_t err = esp_console_run(line, &ret);
+            if (err != ESP_OK) printf("Command error: %s\n", esp_err_to_name(err));
+            linenoiseFree(line);
+        }
+    }
+}

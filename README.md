@@ -1,6 +1,8 @@
 # RadonSafe – ESP32-C6 BLE Überwachungssystem
 
 
+
+
 👷 Projektin tarkoituksena on käyttää ESP32-C6 -mikrokontrolleria valvomaan radonpitoisuuksia. 
 
 RadonSafe ist ein energiesparendes Sicherheitsüberwachungssystem, das auf dem ESP32-C6-LCD-1.47-Entwicklungsboard basiert. Es erkennt gefährliche Radonkonzentrationen in Echtzeit mithilfe von BLE-fähigen Airthings Wave Plus Sensoren.
@@ -21,6 +23,21 @@ RadonSafe ist ein energiesparendes Sicherheitsüberwachungssystem, das auf dem E
 RadonSafe arbeitet vollständig autark im Feldbetrieb, erkennt automatisch verfügbare BLE-Sensoren, speichert Messwerte lokal, warnt bei Grenzwertüberschreitungen optisch und akustisch und lädt alle Messwerte regelmäßig in die Cloud.
 
 ---
+components/
+├── no8_lis3dh/
+│   ├── lis3dh.c
+│   ├── lis3dh.h
+│   └── CMakeLists.txt
+├── shell/
+│   ├── console.c         ◀️ Serial console
+│   ├── console.h
+│   └── CMakeLists.txt
+peripherals_tests/
+└── lis3dh_test.c         ◀️ Fuctional_Tests ++
+main/
+├── main.c
+└── CMakeLists.txt
+
 
 # RadonSafe – ESP32-C6 BLE Monitoring System
 
@@ -36,58 +53,17 @@ RadonSafe is a low-power safety monitoring system based on the ESP32-C6-LCD-1.47
 - 📟 **1.47” LCD GUI** with clear visual alerts and sensor name
 - 🔒 **Local alarm status** retained until manually acknowledged
 
-<<<<<<< HEAD
-ENGLISH:
 
-#RadonSafe v1.0
+## 🛠️ Components
 
-👷 The project's purpose is to use the ESP32-C6 microcontroller to monitor radon levels.
+components/
+└── shell/
+    ├── console.c           ◀️ Komennot + komentojen rekisteröinti
+    ├── console.h
+    └── CMakeLists.txt
+main/
+├── sensor_manager.c       ◀️ Hallitsee mitä sensoreita on käynnissä
+├── sensor_manager.h
+└── main.c
 
-🚀 Functions:
-
-- 🟡 BLE scanning: retrieves Airthings Wave Plus sensor radon measurements
-- 📊 Analysis: compares values to thresholds (150/220 Bq/m³).
-- 🖥️ Display: 1.47" TFT SPI display (LVGL)
-- 💾 Storage: CSV files to an SD card
-- ☁️ Cloud: data sent to Azure service
-- 🔔 Alarm: yellow/red LED + display notification
-
-## 🛠️ Construction
-
-bash
-cd esp32c6_radonsafe
-source ~/esp-idf/export.sh
-idf.py build
-idf.py -p /dev/ttyUSB0 flash monitor
-
-
-SD card structure
-
-/sdcard/
-├ logs/
-└ radon_log.csv
-└── settings/
-    └── config.json
-
-config.json example:
-
-{
-  "polling_interval": 30000,
-  "threshold_warn": 150,
-  "threshold_danger": 220}
-}
-
-🔒 Notes:
-
-    Use a FAT32-formatted SD card.
-
-    BLE is only compatible with certain Airthings models.
-
-    The Azure HTTPS endpoint is defined in the azure_upload.cpp file.
-
-=======
-## System Overview
->>>>>>> 52e2405 (Update README.md with German and English descriptions)
-
-RadonSafe operates fully autonomously in the field, automatically detects nearby BLE sensors, stores measurements locally, issues visual/audio alerts if thresholds are exceeded, and periodically uploads all data to the cloud.
 
