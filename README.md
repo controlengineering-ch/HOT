@@ -1,69 +1,78 @@
-# RadonSafe – ESP32-C6 BLE Überwachungssystem
+# RadonSafe Project
 
-
-
-
-👷 Projektin tarkoituksena on käyttää ESP32-C6 -mikrokontrolleria valvomaan radonpitoisuuksia. 
-
-RadonSafe ist ein energiesparendes Sicherheitsüberwachungssystem, das auf dem ESP32-C6-LCD-1.47-Entwicklungsboard basiert. Es erkennt gefährliche Radonkonzentrationen in Echtzeit mithilfe von BLE-fähigen Airthings Wave Plus Sensoren.
-(Update README.md with German and English descriptions)
-
-## Eigenschaften
-
-- 📡 **BLE-Erkennung** von Airthings Wave Plus Sensoren (alle 30s)
-- 🧠 **Edge-Analyse** mit Warnlogik (220 Bq/m³ kritischer Grenzwert)
-- 💾 **Datenlogging** auf SD-Karte (FIFO-Pufferung)
-- 🌐 **Cloud-Upload** via Wi-Fi (Azure)
-- 🔋 **Very Low Power Mode** mit GPIO-Aufwecksignal
-- 📟 **1.47” LCD GUI** mit klarer Warnanzeige und Gerätenamen
-- 🔒 **Lokaler Alarmstatus** bis zur manuellen Bestätigung gespeichert
-
-## Systemübersicht
-
-RadonSafe arbeitet vollständig autark im Feldbetrieb, erkennt automatisch verfügbare BLE-Sensoren, speichert Messwerte lokal, warnt bei Grenzwertüberschreitungen optisch und akustisch und lädt alle Messwerte regelmäßig in die Cloud.
+RadonSafe is an ESP32-C6 based sensor gateway designed for local radon level monitoring without the need for cloud-based APIs.  
+It reads **Airthings Wave Plus** sensor data from an SD card (`radon_latest.txt`), displays values on a 1.47" LCD using LVGL, and triggers local alerts based on thresholds.  
+Optional upgrades include touch displays, additional sensors, and Ethernet/PoE support (ESP32-S3 variant).
 
 ---
-components/
-├── no8_lis3dh/
-│   ├── lis3dh.c
-│   ├── lis3dh.h
-│   └── CMakeLists.txt
-├── shell/
-│   ├── console.c         ◀️ Serial console
-│   ├── console.h
-│   └── CMakeLists.txt
-peripherals_tests/
-└── lis3dh_test.c         ◀️ Fuctional_Tests ++
-main/
-├── main.c
-└── CMakeLists.txt
+
+## 📌 Features
+- **ESP32-C6** gateway with LVGL-based GUI
+- Reads radon data from SD card (no cloud dependency)
+- Alert levels:
+  - **Warning**: 150 Bq/m³
+  - **Critical**: 220 Bq/m³
+- Multiple sensor support (max 3 in RadonSafe variant)
+- Wake-on proximity, motion, vibration, or touch
+- Local data storage and secure upload (HTTPS, MQTT, OPC UA options)
+- Optional Ethernet/PoE branch: `radonsafe_esp32s3_ethernet`
+
+---
+
+## 🗂 Branch Strategy
+| Branch name                     | Purpose |
+|----------------------------------|---------|
+| `main`                           | Stable production-ready code |
+| `radonsafe`                      | Radon monitoring (ESP32-C6) |
+| `radonsafe_esp32s3_ethernet`     | Ethernet/PoE version (ESP32-S3) |
+| `energywise`                     | Energy optimization logic |
+| `sensorclever`                   | Advanced sensor fusion & AI |
+| `powergate`                      | Power control and battery gateway |
+
+---
+
+## ⚙️ Development Setup
+
+### Prerequisites
+- ESP-IDF (latest stable version)
+- CMake + Ninja build system
+- Git
+- SquareLine Studio (for LVGL GUI design)
 
 
-# RadonSafe – ESP32-C6 BLE Monitoring System
 
-RadonSafe is a low-power safety monitoring system based on the ESP32-C6-LCD-1.47 development board. It detects hazardous radon concentrations in real time using BLE-enabled Airthings Wave Plus sensors.
+### 🗂 Branch Strategy
+| Branch name                     | Purpose |
+|----------------------------------|---------|
+| `main`                           | Stable production-ready code |
+| `radonsafe`                      | Radon monitoring (ESP32-C6) |
+| `radonsafe_esp32s3_ethernet`     | Ethernet/PoE version (ESP32-S3) |
+| `energywise`                     | Energy optimization logic |
+| `sensorclever`                   | Advanced sensor fusion & AI |
+| `powergate`                      | Power control and battery gateway |
 
-## Features
+## ⚙️ Development Setup
 
-- 📡 **BLE scanning** for Airthings Wave Plus sensors (every 30s)
-- 🧠 **Edge analytics** with warning logic (220 Bq/m³ critical threshold)
-- 💾 **Data logging** to SD card (FIFO buffering)
-- 🌐 **Cloud upload** via Wi-Fi (Azure)
-- 🔋 **Very Low Power Mode** with GPIO wakeup signal
-- 📟 **1.47” LCD GUI** with clear visual alerts and sensor name
-- 🔒 **Local alarm status** retained until manually acknowledged
+### Prerequisites
+- ESP-IDF (latest stable version)
+- CMake + Ninja build system
+- Git
+- SquareLine Studio (for LVGL GUI design)
 
+### Clone repository
 
-## 🛠️ Components
+```bash
+git clone https://github.com/controlengineering-ch/HOT.git
+cd HOT
+git submodule update --init --recursive
 
-components/
-└── shell/
-    ├── console.c           ◀️ Komennot + komentojen rekisteröinti
-    ├── console.h
-    └── CMakeLists.txt
-main/
-├── sensor_manager.c       ◀️ Hallitsee mitä sensoreita on käynnissä
-├── sensor_manager.h
-└── main.c
+### Building the Project
 
+idf.py set-target esp32c6   # or esp32s3 for Ethernet branch
+idf.py menuconfig
+idf.py build
+idf.py flash
+idf.py monitor
+
+📄 Git Branch Quick Commands
 
