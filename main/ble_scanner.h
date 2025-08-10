@@ -1,12 +1,14 @@
 #pragma once
-
+#include <cstdint>
 #include <string>
-#include "sensor_data.h"
 
+struct SensorData {
+    std::string identifier;
+    int         radon{0};
+    uint32_t    timestamp{0};
+    bool        valid{false};
+};
+
+void init_ble();
 SensorData scan_for_waveplus();
-
-// Stub-funktioiden julistukset:
-bool connect_to_sensor(const std::string& mac_address);
-int read_radon_value(const std::string& mac_address);
-std::string read_timestamp(const std::string& mac_address);
 

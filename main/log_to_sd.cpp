@@ -1,57 +1,131 @@
-#include "log_to_sd.h"
-#include <stdio.h>
+// log_to_sd.cpp (ESP-IDF 5.x, ESP32-C6 + SDSPI)
+#include <cstdio>
+#include <cstring>
 #include <string>
-#include <ctime>
-#include "esp_vfs_fat.h"
-#include "sdmmc_cmd.h"
-#include "driver/sdmmc_host.h"
-#include "driver/sdmmc_defs.h"
+
+extern "C" {
 #include "esp_log.h"
+#include "esp_err.h"
+#include "esp_vfs_fat.h"
+#include "driver/spi_common.h"
+#include "driver/sdspi_host.h"
+#include "sdmmc_cmd.h"
+#include "esp_timer.h"
+}
 
-#define MOUNT_POINT "/sdcard"
-static const char* TAG = "SD_LOG";
+static const char* TAG = "storage";
+static std::string s_mount_point;
 
-bool initSDCard(const char* mountPath) {
-    esp_vfs_fat_sdmmc_mount_config_t mount_config = {
-        .format_if_mount_failed = false,
-        .max_files = 5,
-        .allocation_unit_size = 16 * 1024
+// --- PINNIT: säädä omien kytkentöjesi mukaan ---
+#ifndef SD_PIN_MOSI
+#define SD_PIN_MOSI  6   // esimerkki
+#endif
+#ifndef SD_PIN_MISO
+#define SD_PIN_MISO  5   // esimerkki
+#endif
+#ifndef SD_PIN_SCLK
+#define SD_PIN_SCLK  4   // esimerkki
+#endif
+#ifndef SD_PIN_CS
+#define SD_PIN_CS    3   // esimerkki (CS)
+#endif
+// ------------------------------------------------
+
+bool initSDCard(const char* mount_point)
+{
+    s_mount_point = mount_point ? mount_point : "/sdcard";
+
+    esp_vfs_fat_mount_config_t mount_config = {
+        .format_if_mount_failed   = true,
+        .max_files                = 5,
+        .allocation_unit_size     = 16 * 1024,
+        .disk_status_check_enable = false,
+        .use_one_fat              = false
     };
 
-    sdmmc_card_t* card;
-    const char mount_point[] = MOUNT_POINT;
+    sdmmc_card_t* card = nullptr;
 
-    ESP_LOGI(TAG, "Mounting SD card at %s...", mount_point);
+    // SDSPI host
+    sdmmc_host_t host = SDSPI_HOST_DEFAULT();
+    // ESP32-C6: käytä SPI2_HOST tai SPI3_HOST laitteistosi mukaan
+    const spi_host_device_t spi_host = SPI2_HOST;
+    host.slot = spi_host; // sdmmc_host_t.slot on int, mutta arvo on sama
 
-    esp_err_t ret = esp_vfs_fat_sdmmc_mount(mount_point, &sdmmc_host_default(), NULL, &mount_config, &card);
+    // SPI-väylä (zero-init -> ei varoituksia)
+    spi_bus_config_t bus_cfg = {};
+    bus_cfg.mosi_io_num     = SD_PIN_MOSI;
+    bus_cfg.miso_io_num     = SD_PIN_MISO;
+    bus_cfg.sclk_io_num     = SD_PIN_SCLK;
+    bus_cfg.quadwp_io_num   = -1;
+    bus_cfg.quadhd_io_num   = -1;
+    bus_cfg.max_transfer_sz = 4000;
 
-    if (ret != ESP_OK) {
-        ESP_LOGE(TAG, "Failed to mount filesystem. Error: %s", esp_err_to_name(ret));
+    // HUOM: spi_bus_initialize odottaa spi_host_device_t
+    esp_err_t err = spi_bus_initialize(spi_host, &bus_cfg, SPI_DMA_CH_AUTO);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "spi_bus_initialize failed: %s", esp_err_to_name(err));
+        return false;
+    }
+
+    // SD-laitteen konfiguraatio
+    sdspi_device_config_t slot_config = SDSPI_DEVICE_CONFIG_DEFAULT();
+    slot_config.gpio_cs = static_cast<gpio_num_t>(SD_PIN_CS);  // tyyppicasti
+    slot_config.host_id = spi_host;                            // oikea tyyppi
+
+    // Mounttaa FAT VFS
+    err = esp_vfs_fat_sdspi_mount(s_mount_point.c_str(), &host, &slot_config,
+                                  &mount_config, &card);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "esp_vfs_fat_sdspi_mount failed: %s", esp_err_to_name(err));
+        spi_bus_free(spi_host);
         return false;
     }
 
     sdmmc_card_print_info(stdout, card);
+    ESP_LOGI(TAG, "SD mounted at %s", s_mount_point.c_str());
     return true;
 }
 
-bool logSensorData(const std::string& sensorID, float radon, float co2, float temp, float humidity) {
-    char filepath[128];
-    snprintf(filepath, sizeof(filepath), "%s/RadonSafe/logs/sensor_log.csv", MOUNT_POINT);
-
-    FILE* f = fopen(filepath, "a");
-    if (!f) {
-        ESP_LOGE(TAG, "Failed to open file for writing: %s", filepath);
+bool logSensorData(const std::string& identifier,
+                   float radon,
+                   float temperature,
+                   float humidity,
+                   float pressure)
+{
+    if (s_mount_point.empty()) {
+        ESP_LOGE(TAG, "SD not mounted. Call initSDCard() first.");
         return false;
     }
 
-    time_t now = time(NULL);
-    struct tm* timeinfo = localtime(&now);
+    const uint64_t ms = esp_timer_get_time() / 1000ULL;
 
-    char timeStr[64];
-    strftime(timeStr, sizeof(timeStr), "%Y-%m-%d %H:%M:%S", timeinfo);
+    std::string path = s_mount_point + "/sensors.csv";
+    FILE* f = std::fopen(path.c_str(), "a");
+    if (!f) {
+        ESP_LOGE(TAG, "fopen('%s') failed", path.c_str());
+        return false;
+    }
 
-    fprintf(f, "%s,%s,%.1f,%.1f,%.1f,%.1f\n", timeStr, sensorID.c_str(), radon, co2, temp, humidity);
-    fclose(f);
+    std::fseek(f, 0, SEEK_END);
+    if (std::ftell(f) == 0) {
+        std::fprintf(f, "timestamp_ms,identifier,radon,temperature,humidity,pressure\n");
+    }
+
+    int n = std::fprintf(f, "%llu,%s,%.2f,%.2f,%.2f,%.2f\n",
+                         static_cast<unsigned long long>(ms),
+                         identifier.c_str(),
+                         static_cast<double>(radon),
+                         static_cast<double>(temperature),
+                         static_cast<double>(humidity),
+                         static_cast<double>(pressure));
+    std::fclose(f);
+
+    if (n <= 0) {
+        ESP_LOGE(TAG, "fprintf failed");
+        return false;
+    }
+
+    ESP_LOGI(TAG, "Logged to %s", path.c_str());
     return true;
 }
 

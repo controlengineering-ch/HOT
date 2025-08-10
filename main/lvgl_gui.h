@@ -1,15 +1,34 @@
 #pragma once
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 #include "lvgl.h"
+#ifdef __cplusplus
+}
+#endif
 
-enum class StatusLevel {
-    NORMAL,
-    WARNING,
-    CRITICAL
+// Yhtenäinen status-enum kaikkialle projektiin
+enum StatusLevel {
+    STATUS_OK = 0,
+    STATUS_WARNING = 1,
+    STATUS_CRITICAL = 2
 };
 
-void lvgl_gui_init();
-void update_radiation_value(int bq_value);
-void update_sensor_id(const char* id);
+// Alusta yksinkertainen GUI (otsikko + statuslabel)
+void lvgl_gui_init(void);
+
+// C-rajapinta: päivitys kokonaislukuna (esim. C:stä tai shellistä)
+#ifdef __cplusplus
+extern "C" {
+#endif
+void gui_update_status(int level);
+#ifdef __cplusplus
+}
+#endif
+
+// C++-rajapinta: suora enum
+#ifdef __cplusplus
 void update_status(StatusLevel level);
+#endif
 

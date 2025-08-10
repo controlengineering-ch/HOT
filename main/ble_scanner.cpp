@@ -1,6 +1,13 @@
 #include "ble_scanner.h"
 #include <iostream>
 
+extern "C" {
+#include "esp_nimble.h"
+#include "nimble/ble.h"
+#include "host/ble_hs.h"
+#include "host/ble_gap.h"
+}
+
 // Olemas oleva scan_for_waveplus() pysyy ennallaan...
 
 bool connect_to_sensor(const std::string& mac_address) {

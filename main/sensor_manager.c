@@ -1,82 +1,132 @@
-#include "sensor_manager.h"
-#include "no7_vibration.h"
-#include "lis3dh.h"
-#include "esp_log.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdbool.h>
+#include "sensor_reader.h"
+#if __has_include("cJSON.h")
+  #include "cJSON.h"
+#else
+  #include <cjson/cJSON.h>
+#endif
+#include "lis3dh.h"  // ok vaikka ei käytetä tässä – varmistaa include-polun
 
-#define NO7_GPIO GPIO_NUM_6
-#define I2C_PORT I2C_NUM_0
-#define I2C_SDA GPIO_NUM_4
-#define I2C_SCL GPIO_NUM_5
+static bool parse_json(const char *buf, sensor_data_t *out) {
+    cJSON *json = cJSON_Parse(buf);
+    if (!json) return false;
 
-static const char* TAG = "SENSOR_MGR";
+    cJSON *radon = cJSON_GetObjectItem(json, "radon");
+    cJSON *ts    = cJSON_GetObjectItem(json, "timestamp");
 
-static bool sensor_states[SENSOR_MAX] = {false};
-static QueueHandle_t no7_evt_q = NULL;
-
-void sensor_manager_init(void) {
-    no7_evt_q = xQueueCreate(10, sizeof(no7_event_t));
-}
-
-void sensor_manager_start(sensor_id_t id)
-{
-    if (sensor_states[id]) return;
-
-    switch (id) {
-        case SENSOR_NO7:
-            no7_event_queue = no7_evt_q;
-            no7_init(NO7_GPIO);
-            ESP_LOGI(TAG, "NO7 started.");
-            break;
-        case SENSOR_NO8:
-            lis3dh_init(I2C_PORT, I2C_SDA, I2C_SCL);
-            ESP_LOGI(TAG, "NO8 (LIS3DH) started.");
-            break;
-        case SENSOR_NO1:
-            ESP_LOGI(TAG, "NO1 start not yet implemented.");
-            break;
-        default:
-            return;
+    bool ok = cJSON_IsNumber(radon) && cJSON_IsString(ts);
+    if (ok) {
+        out->radon_value = radon->valuedouble;
+        strncpy(out->timestamp, ts->valuestring, sizeof(out->timestamp) - 1);
+        out->timestamp[sizeof(out->timestamp) - 1] = '\0';
     }
-    sensor_states[id] = true;
+
+    cJSON_Delete(json);
+    return ok;
 }
 
-void sensor_manager_stop(sensor_id_t id)
-{
-    if (!sensor_states[id]) return;
+static bool parse_csv_line(const char *line, sensor_data_t *out) {
+    const char *comma = strchr(line, ',');
+    if (!comma) return false;
 
-    switch (id) {
-        case SENSOR_NO7:
-            ESP_LOGI(TAG, "NO7 stopped.");
-            break;
-        case SENSOR_NO8:
-            lis3dh_power_down(I2C_PORT);
-            ESP_LOGI(TAG, "NO8 (LIS3DH) stopped.");
-            break;
-        case SENSOR_NO1:
-            ESP_LOGI(TAG, "NO1 stop not yet implemented.");
-            break;
-        default:
-            return;
+    size_t ts_len = (size_t)(comma - line);
+    if (ts_len == 0 || ts_len >= sizeof(out->timestamp)) return false;
+
+    memcpy(out->timestamp, line, ts_len);
+    out->timestamp[ts_len] = '\0';
+
+    char *endptr = NULL;
+    double val = strtod(comma + 1, &endptr);
+    if (endptr == comma + 1) return false;
+
+    out->radon_value = val;
+    return true;
+}
+
+bool read_radon_value(const char *filepath, sensor_data_t *data) {
+    if (!filepath || !data) return false;
+
+    FILE *file = fopen(filepath, "r");
+    if (!file) return false;
+
+    if (fseek(file, 0, SEEK_END) != 0) {
+        fclose(file);
+        return false;
     }
-    sensor_states[id] = false;
-}
-
-void sensor_manager_stop_all(void)
-{
-    for (int i = 0; i < SENSOR_MAX; i++) {
-        sensor_manager_stop((sensor_id_t)i);
+    long len = ftell(file);
+    if (len < 0) {
+        fclose(file);
+        return false;
     }
+    rewind(file);
+
+    char *buffer = (char *)malloc((size_t)len + 1);
+    if (!buffer) {
+        fclose(file);
+        return false;
+    }
+
+    size_t nread = fread(buffer, 1, (size_t)len, file);
+    fclose(file);
+    buffer[nread] = '\0';
+
+    bool ok = false;
+    const char *p = buffer;
+    while (*p == ' ' || *p == '\t' || *p == '\n' || *p == '\r') p++;
+    if (*p == '{') {
+        ok = parse_json(buffer, data);
+    }
+
+    if (!ok) {
+        char *saveptr = NULL;
+        char *line = strtok_r(buffer, "\r\n", &saveptr);
+        sensor_data_t last = {0};
+        bool found = false;
+
+        while (line) {
+            if (*line != '#' && *line != '\0') {
+                sensor_data_t tmp;
+                if (parse_csv_line(line, &tmp)) {
+                    last = tmp;
+                    found = true;
+                }
+            }
+            line = strtok_r(NULL, "\r\n", &saveptr);
+        }
+
+        if (found) {
+            *data = last;
+            ok = true;
+        }
+    }
+
+    free(buffer);
+    return ok;
 }
 
-bool sensor_manager_is_running(sensor_id_t id)
-{
-    return sensor_states[id];
+bool append_to_history(const char *filepath, const sensor_data_t *data) {
+    if (!filepath || !data) return false;
+
+    FILE *rf = fopen(filepath, "r");
+    if (rf) {
+        char line[256];
+        while (fgets(line, sizeof(line), rf)) {
+            if (strstr(line, data->timestamp)) {
+                fclose(rf);
+                return true; // jo kirjattu – ok
+            }
+        }
+        fclose(rf);
+    }
+
+    FILE *wf = fopen(filepath, "a");
+    if (!wf) return false;
+
+    int rc = fprintf(wf, "%s,%.1f\n", data->timestamp, data->radon_value);
+    fclose(wf);
+    return (rc > 0);
 }
 
-void sensor_manager_print_status(void)
-{
-    printf("Sensor status:\n");
-    printf("  NO7:  %s\n", sensor_states[SENSOR_NO7] ? "RUNNING" : "STOPPED");
-    printf("  NO8:  %s\n", sensor_states[SENSOR_NO8] ? "RUNNING" : "STOPPED");
-    printf("  NO1:  %s\n", sensor_states[SENSOR_NO1] ? "RUNNING" : "STOPPED");
-}
