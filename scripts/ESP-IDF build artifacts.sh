@@ -1,4 +1,4 @@
-# ESP-IDF build artifacts
+echo "# ESP-IDF build artifacts
 /build/
 /sdkconfig
 /sdkconfig.old
@@ -20,7 +20,7 @@ __pycache__/
 # ESP-IDF tools cache
 /.espressif/
 /dist/
-/.ccache/
+/ccache/
 
 # SquareLine exports
 *.slp~
@@ -28,4 +28,9 @@ __pycache__/
 
 # Logs and temp files
 *.log
-*.bak
+*.bak" > .gitignore
+
+git add .gitignore
+git commit -m "Add ESP-IDF .gitignore"
+git push
+
