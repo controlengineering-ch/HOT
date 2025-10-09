@@ -1,6 +1,6 @@
 # Kirjanpitolaki 1336/1997 – keskeiset velvoitteet Riku Hoitaa -palvelulle
 
-Tämä muistio kokoaa suomalaisen kirjanpitolain (1336/1997, muutoksineen) keskeiset vaatimukset, jotka Riku Hoitaa -mobiilisovelluksen ja sen backend-palvelun on huomioitava. Laki sisältää useita muutoksia (mm. 1620/2015, 1376/2022); muista tarkistaa ajantasainen Finlex-versio ennen tuotantoon menoa.
+Tämä muistio kokoaa suomalaisen kirjanpitolain (1336/1997, muutoksineen) keskeiset vaatimukset, jotka Riku Hoitaa -mobiilisovelluksen ja sen backend-palvelun on huomioitava. Laki sisältää useita muutoksia (mm. 1620/2015, 1376/2022); muista tarkistaa ajantasainen Finlex-versio ennen tuotantoon menoa. **Viimeisin tarkistettu versio (19.12.2024) löytyy osoitteesta:** <https://www.finlex.fi/eli?uri=http://data.finlex.fi/eli/sd/1997/1336/ajantasa/2024-12-19/fin>.
 
 ## 1. Kirjanpitovelvollisuus ja yleiset periaatteet (Luku 1 & 2)
 - **Kirjanpitovelvollisuus** koskee kaikkea liiketoimintaa harjoittavaa yhteisöä ja luonnollista henkilöä. Palvelun on mahdollistettava kirjanpitovelvollisen oman tilikartan ja tilikauden asetukset.
