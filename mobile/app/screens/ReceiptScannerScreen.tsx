@@ -25,6 +25,7 @@ export const ReceiptScannerScreen: React.FC = () => {
   const [preview, setPreview] = useState<PhotoFile | null>(null);
   const [draft, setDraft] = useState<ReceiptDraft | null>(null);
   const [rawText, setRawText] = useState<string>('');
+  const [awaitingMoreChoice, setAwaitingMoreChoice] = useState(false);
 
   useEffect(() => {
     async function requestPermissions() {
@@ -52,6 +53,7 @@ export const ReceiptScannerScreen: React.FC = () => {
       const result = await processReceipt(photo.path);
       setDraft(result.draft);
       setRawText(result.rawText);
+      setAwaitingMoreChoice(true);
       setStatus('idle');
     } catch (error) {
       console.error('Failed to capture receipt', error);
@@ -64,6 +66,7 @@ export const ReceiptScannerScreen: React.FC = () => {
     setPreview(null);
     setDraft(null);
     setRawText('');
+    setAwaitingMoreChoice(false);
   }, []);
 
   const instructions = useMemo(() => {
@@ -71,12 +74,16 @@ export const ReceiptScannerScreen: React.FC = () => {
       return 'Prosessoidaan kuittia...';
     }
 
+    if (awaitingMoreChoice) {
+      return 'Lisää kuitteja? Valitse kyllä aloittaaksesi uuden skannauksen.';
+    }
+
     if (!draft) {
       return 'Kohdista kuitti vihreään kehykseen – kamera laukaisee automaattisesti.';
     }
 
     return 'Kuitti tallennettu. Voit sulkea tai skannata uuden kuitin.';
-  }, [draft, status]);
+  }, [awaitingMoreChoice, draft, status]);
 
   if (!device || !hasPermission) {
     return (
@@ -124,16 +131,39 @@ export const ReceiptScannerScreen: React.FC = () => {
                 Tarkista kentät: {draft.confirmationRequiredFields.join(', ')}
               </Text>
             ) : null}
-            <TouchableOpacity style={styles.secondaryButton} onPress={resetScanner}>
-              <Text style={styles.secondaryButtonText}>Skannaa uusi kuitti</Text>
-            </TouchableOpacity>
+            {awaitingMoreChoice ? (
+              <View style={styles.morePromptContainer}>
+                <Text style={styles.morePromptTitle}>Lisää kuitteja?</Text>
+                <View style={styles.morePromptButtons}>
+                  <TouchableOpacity
+                    style={[styles.choiceButton, styles.choiceButtonPrimary]}
+                    onPress={resetScanner}
+                  >
+                    <Text style={styles.choiceButtonPrimaryText}>Kyllä</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.choiceButton, styles.choiceButtonSecondary]}
+                    onPress={() => setAwaitingMoreChoice(false)}
+                  >
+                    <Text style={styles.choiceButtonSecondaryText}>Ei</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ) : (
+              <TouchableOpacity style={styles.secondaryButton} onPress={resetScanner}>
+                <Text style={styles.secondaryButtonText}>Skannaa uusi kuitti</Text>
+              </TouchableOpacity>
+            )}
           </Animated.View>
         ) : null}
 
         <TouchableOpacity
-          style={[styles.captureButton, status !== 'idle' && styles.captureButtonDisabled]}
+          style={[
+            styles.captureButton,
+            (status !== 'idle' || awaitingMoreChoice) && styles.captureButtonDisabled,
+          ]}
           onPress={handleCapture}
-          disabled={status !== 'idle'}
+          disabled={status !== 'idle' || awaitingMoreChoice}
         >
           <Text style={styles.captureButtonText}>
             {status === 'processing' ? 'Prosessoidaan…' : 'Tallenna kuitti'}
@@ -218,6 +248,45 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
+  },
+  morePromptContainer: {
+    marginTop: 16,
+  },
+  morePromptTitle: {
+    color: navy,
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  morePromptButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  choiceButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 14,
+    alignItems: 'center',
+    marginHorizontal: 6,
+  },
+  choiceButtonPrimary: {
+    backgroundColor: green,
+  },
+  choiceButtonPrimaryText: {
+    color: navy,
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  choiceButtonSecondary: {
+    borderWidth: 1,
+    borderColor: '#B5C1D3',
+    backgroundColor: white,
+  },
+  choiceButtonSecondaryText: {
+    color: navy,
+    fontSize: 18,
+    fontWeight: '600',
   },
   summaryTitle: {
     color: navy,
