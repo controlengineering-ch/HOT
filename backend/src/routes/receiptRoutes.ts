@@ -8,6 +8,13 @@ const upload = multer();
 const router = express.Router();
 const receiptService = new ReceiptService();
 
+const processReceiptSchema = z.object({
+  receiptId: z.string().min(1),
+  imageBase64: z.string().min(1),
+  fileName: z.string().min(1),
+  platform: z.string().optional(),
+});
+
 const createReceiptSchema = z.object({
   submitterId: z.string().min(1),
   submitterName: z.string().optional(),
@@ -69,6 +76,40 @@ const updateSchema = z.object({
       freeField4: z.string().max(2).optional(),
     })
     .optional(),
+});
+
+router.post('/process', async (req, res, next) => {
+  try {
+    const payload = processReceiptSchema.parse(req.body);
+    const approximateSizeKb = Math.round((payload.imageBase64.length * 3) / 4 / 1024);
+    const merchantName = payload.fileName
+      .replace(/\.[^.]+$/, '')
+      .replace(/[-_]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 60) || 'Tuntematon toimittaja';
+
+    const now = new Date().toISOString();
+
+    res.json({
+      amount: undefined,
+      taxAmount: undefined,
+      currency: 'EUR',
+      merchantName,
+      purchaseDate: now,
+      paymentMethod: undefined,
+      costCenter: undefined,
+      expenseReportId: undefined,
+      confirmationRequiredFields: ['amount', 'taxAmount', 'currency', 'notes'],
+      notes: undefined,
+      rawText: `Simuloitu OCR ${merchantName} (${approximateSizeKb} kB) – vahvista tiedot.`,
+    });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: 'Validation failed', details: error.flatten() });
+    }
+    return next(error);
+  }
 });
 
 router.post('/', upload.single('image'), async (req, res, next) => {

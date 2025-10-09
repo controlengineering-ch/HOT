@@ -126,6 +126,13 @@ export const ReceiptScannerScreen: React.FC = () => {
             <Text style={styles.summaryText}>Päivämäärä: {draft.purchaseDate ?? '-'}</Text>
             <Text style={styles.summaryText}>Toimittaja: {draft.merchantName ?? '-'}</Text>
             <Text style={styles.summaryText}>Kustannuspaikka: {draft.costCenter ?? '-'}</Text>
+            {draft.backendId ? (
+              <Text style={styles.summaryText}>Taustapalvelun tunniste: {draft.backendId}</Text>
+            ) : (
+              <Text style={styles.pendingSyncText}>
+                Synkronoidaan taustapalveluun heti yhteyden muodostuessa.
+              </Text>
+            )}
             {draft.confirmationRequiredFields?.length ? (
               <Text style={styles.warningText}>
                 Tarkista kentät: {draft.confirmationRequiredFields.join(', ')}
@@ -300,6 +307,11 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   warningText: {
+    color: yellow,
+    fontSize: 14,
+    marginTop: 8,
+  },
+  pendingSyncText: {
     color: yellow,
     fontSize: 14,
     marginTop: 8,

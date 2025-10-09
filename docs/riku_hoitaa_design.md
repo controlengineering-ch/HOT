@@ -55,6 +55,7 @@ Ensimmäinen toimitettava ominaisuus on kuittien tallentaminen ja litterointi k�
 - **Rakenteistusagentti**: Palvelinpuolella ajettava ketju (esim. LangChain/LangGraph), joka yhdistää OCR-tulokset toimittajarekisteriin, ALV-taulukkoon ja oppii yrityksen kustannuspaikat. LLM tarkistaa summien johdonmukaisuuden ja ehdottaa kategorioita.
 - **Validointisäännöt**: PostgreSQL:ssä sijaitsevat yrityskohtaiset tilikartat ja ALV-prosentit. Agentti vertailee niitä OCR-tietoon ja nostaa epävarmuustasot UI:hin.
 - **Synkronointi**: Offline-tuki tallentamalla kuvat ja metatiedot laitteelle (encrypted SQLite). Kun yhteys palaa, agentit jatkavat prosessointia ja synkronoivat kirjanpidon.
+- **Tilapäinen OCR-stub**: Ensimmäisessä mobiiliversiossa backend tarjoaa `/api/receipts/process` -pisteen, joka tuottaa placeholder-datan base64-kuvasta. Se mahdollistaa sovelluksen virtauslogiikan testaamisen ennen varsinaisen OCR/LLM-ketjun käyttöönottoa.
 
 ### Datavirta, arkistointi ja tietomallit
 - **Kuvien vastaanotto ja varastointi**: Esiprosessoitu kuva pumpataan ensin `receipt_images`-tauluun, joka tallentaa kuvan URL:n (tai objektivaraston polun), hashin, resoluution, käytetyn esikäsittelypipelinenversion sekä aikaleiman. Samalla kuittien binäärit talletetaan krypattuun objektivarastoon, josta arkistointi- ja auditointipalvelu voi hakea ne myöhemmin.

@@ -16,6 +16,8 @@ By default the API listens on `http://localhost:4000`.
 
 ## Key endpoints
 
+- `POST /api/receipts/process` – Temporary OCR stub that accepts base64-encoded images and returns placeholder extraction data so
+  the mobile client can complete its flow before the production pipeline is ready.
 - `POST /api/receipts` – Upload a new receipt with a multipart form containing an image and JSON metadata. The server validates
   the payload, stores the image in `storage/images`, and persists metadata in `storage/receipts.json`.
 - `GET /api/receipts` – List stored receipts with pagination and filtering options.

@@ -4,6 +4,8 @@ export interface ReceiptDraft {
   id: string;
   imagePath: string;
   processedImagePath?: string;
+  backendId?: string;
+  backendImageUrl?: string;
   capturedAt: string;
   amount?: number;
   taxAmount?: number;
