@@ -144,6 +144,8 @@ Jotta **riku.click** voidaan ottaa käyttöön palvelun julkisena osoitteena, ta
    - Toteuta IaC-konfiguraatio (Terraform, Pulumi) DNS-, CDN- ja backend-resursseille, jotta `riku.click` voidaan toistaa eri ympäristöihin (staging, prod).
    - Lisää valvonta- ja hälytyssäännöt (uptime, cert expiry, latenssit) sekä incident-prosessi.
 
+Lisätietoja Namecheap-konfiguraatiosta ja sen nykyisestä tilanteesta löytyy muistilapusta [docs/domain/riku_click_dns_review.md](domain/riku_click_dns_review.md), jossa on yksityiskohtainen luettelo muutoksista ennen tuotantoon siirtymistä.
+
 Kun yllä oleva lista on hoidettu, domain voidaan julkaista luotettavasti sekä markkinointi- että sovellusliikenteelle.
 
 ## Käyttöliittymän osiot
