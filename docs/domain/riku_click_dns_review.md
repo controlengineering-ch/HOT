@@ -44,3 +44,14 @@ These defaults are expected on a fresh Namecheap domain, but they must be replac
 4. Track all changes in the domain launch checklist so stakeholders know when the domain is production-ready.
 
 Once these updates are in place, the Namecheap zone will match the previously defined launch requirements and can be handed over to DevOps for automation.
+
+## SSL/TLS follow-up based on registrar panel
+
+The Namecheap SSL dashboard screenshot (PositiveSSL for `leoai.live`) confirms that the account already manages certificate issuance through the registrar. To avoid blockers when `riku.click` goes live:
+
+1. **Issue the correct certificate** – Request or re-key a certificate specifically for `riku.click` (and `*.riku.click` if you need subdomains). The currently installed certificate applies to another domain and cannot be reused.
+2. **Generate a CSR from the target platform** – If Cloud Run/Cloud CDN or another managed service terminates TLS, generate the CSR there; otherwise, create one via OpenSSL and upload it to Namecheap before downloading the signed certificate.
+3. **Automate renewal reminders** – PositiveSSL certificates typically renew annually. Add the expiry date to the launch checklist and integrate monitoring/alerts so the new domain never lapses.
+4. **Store private keys securely** – Ensure the private key that pairs with the CSR is stored in a secrets manager (Secret Manager, AWS Secrets Manager, Vault) with restricted access.
+
+Document the issuance steps alongside the DNS automation so that future renewals follow the same hardened process.
