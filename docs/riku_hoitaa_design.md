@@ -83,6 +83,16 @@ Ensimmäinen toimitettava ominaisuus on kuittien tallentaminen ja litterointi k�
 - **Tietokanta**: PostgreSQL taloustietojen rakenteelliseen tallennukseen, lisäksi BigQuery tai vastaava analytiikkaa varten.
 - **Turvallisuus**: OAuth2.0/BankID kirjautuminen, end-to-end -salaus arkaluontoisille dokumenteille, audit trail kaikista automaattisista päätöksistä.
 
+### Hallintapaneelin WebUI-pohja
+
+Ensimmäinen web-hallintapaneelin versio rakennetaan Vite + React + TypeScript -pinolla. TailwindCSS huolehtii väripaletin (vihreä, keltainen, valkoinen, tumma navy blue) toistosta komponenteissa. Pohja sisältää seuraavat näkymät ja komponentit:
+
+- **Päänäkymä**: Talouden ohjauspöydän yläosa esittelee agentin ajantasaiset toimenpide-ehdotukset ja tarjoaa navigaation dashboardiin, kuittilistaan ja raportteihin.
+- **Kuittien sisäänkirjaus** (`ReceiptIntakePanel`): Lomake, johon voi pudottaa mobiililla kuvatun kuitin, tarkistaa LLM-agentin tunnistamat kentät ja lähettää ne backendin `/api/receipts`-rajapintaan.
+- **Viimeisimmät kuitit** (`RecentReceipts`): Mock-datalla täytetty lista, jonka tilalle kytketään backend-haut, kun API on valmis palauttamaan kuitit agentin tilatietoineen.
+
+Pohja toimii itsenäisenä `web/`-hakemistossa ja on suunniteltu samaan autentikointiin kuin mobiili- ja backend-palvelut. Proxy-asetuksella (`vite.config.ts`) voidaan ohjata API-kutsut paikalliseen backend-instanssiin kehityksessä.
+
 ### Backend-hosting-suositus
 Ensimmäisen vaiheen tarpeisiin suosittelen rakentamaan backendin Google Cloud Platformiin (GCP) seuraavista syistä:
 
