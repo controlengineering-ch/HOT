@@ -1,7 +1,7 @@
 import path from 'node:path';
 
 const root = process.cwd();
-const storageDir = process.env.STORAGE_DIR ?? path.join(root, 'backend', 'storage');
+const storageDir = process.env.STORAGE_DIR ?? path.join(root, 'storage');
 
 export const config = {
   port: Number(process.env.PORT ?? 4000),

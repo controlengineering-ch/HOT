@@ -7,6 +7,7 @@ import { logger } from './utils/logger.js';
 const app = express();
 
 app.use(express.json());
+app.use('/images', express.static(config.imageDir));
 app.get('/healthz', (_req, res) => {
   res.json({ status: 'ok' });
 });
